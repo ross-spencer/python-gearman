@@ -169,7 +169,9 @@ def submit_cmd_for_background_priority(background, priority):
         (False, PRIORITY_LOW): GEARMAN_COMMAND_SUBMIT_JOB_LOW,
         (False, PRIORITY_HIGH): GEARMAN_COMMAND_SUBMIT_JOB_HIGH
     }
+    print("In submit cmd for background priority", background)
     lookup_tuple = (background, priority)
+    print "{}, {}, {}, {}".format(background, priority, cmd_type_lookup[lookup_tuple], cmd_type_lookup)
     cmd_type = cmd_type_lookup[lookup_tuple]
     return cmd_type
 
@@ -270,6 +272,7 @@ def pack_binary_command(cmd_type, cmd_args, is_response=False):
 
 def parse_text_command(in_buffer):
     """Parse a text command and return a single line at a time"""
+    print("XXX parse_Text commnad 0th char: '{}'".format(in_buffer[:4]))
     cmd_type = None
     cmd_args = None
     cmd_len = 0
@@ -278,7 +281,9 @@ def parse_text_command(in_buffer):
 
     text_command, in_buffer = compat.array_to_bytes(in_buffer).split(b'\n', 1)
     if NULL_CHAR in text_command:
-        raise ProtocolError('Received unexpected character: %s' % text_command)
+        if text_command.find(NULL_CHAR) != 0:
+            print("XXXXXXXXX parse_text_command errored", text_command[:20])
+            raise ProtocolError("Received unexpected '{}' character at pos: {}".format(NULL_CHAR, text_command.find(NULL_CHAR)))
 
     # Fake gearman command "TEXT_COMMAND" used to process server admin client responses
     cmd_type = GEARMAN_COMMAND_TEXT_COMMAND

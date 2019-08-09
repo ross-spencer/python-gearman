@@ -45,10 +45,14 @@ class GearmanCommandHandler(object):
 
     def send_command(self, cmd_type, **cmd_args):
         """Hand off I/O to the connection mananger"""
+        print("XXX COMMAND HANDLER: 1", cmd_type, cmd_args)
         self.connection_manager.send_command(self, cmd_type, cmd_args)
 
     def recv_command(self, cmd_type, **cmd_args):
         """Maps any command to a recv_* callback function"""
+
+        print("XXX COMMAND HANDLER: 2", cmd_type, cmd_args)
+
         completed_work = None
 
         gearman_command_name = get_command_name(cmd_type)

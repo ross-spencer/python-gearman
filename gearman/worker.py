@@ -26,8 +26,10 @@ class GearmanWorker(GearmanConnectionManager):
         self.command_handler_holding_job_lock = None
 
         self._update_initial_state()
+        print("XXX WORKER 1")
 
     def _update_initial_state(self):
+        print("XXX WORKER 2")
         self.handler_initial_state['abilities'] = self.worker_abilities.keys()
         self.handler_initial_state['client_id'] = self.worker_client_id
 
@@ -40,6 +42,7 @@ class GearmanWorker(GearmanConnectionManager):
         def function_callback(calling_gearman_worker, current_job):
             return current_job.data
         """
+        print("XXX WORKER 3")
         self.worker_abilities[task] = callback_function
         self._update_initial_state()
 
@@ -50,6 +53,7 @@ class GearmanWorker(GearmanConnectionManager):
 
     def unregister_task(self, task):
         """Unregister a function with worker"""
+        print("XXX WORKER 4")
         self.worker_abilities.pop(task, None)
         self._update_initial_state()
 
@@ -60,6 +64,7 @@ class GearmanWorker(GearmanConnectionManager):
 
     def set_client_id(self, client_id):
         """Notify the server that we should be identified as this client ID"""
+        print("XXX WORKER 5")
         self.worker_client_id = client_id
         self._update_initial_state()
 
@@ -70,6 +75,9 @@ class GearmanWorker(GearmanConnectionManager):
 
     def work(self, poll_timeout=POLL_TIMEOUT_IN_SECONDS):
         """Loop indefinitely, complete tasks from all connections."""
+        print("XXX WORKER 6")
+
+
         continue_working = True
         worker_connections = []
 
@@ -101,6 +109,7 @@ class GearmanWorker(GearmanConnectionManager):
             current_connection.close()
 
     def shutdown(self):
+        print("XXX WORKER 7")
         self.command_handler_holding_job_lock = None
         super(GearmanWorker, self).shutdown()
 
@@ -109,6 +118,7 @@ class GearmanWorker(GearmanConnectionManager):
     ##############################################################
     def establish_worker_connections(self):
         """Return a shuffled list of connections that are alive, and try to reconnect to dead connections if necessary."""
+        print("XXX WORKER 8")
         self.randomized_connections = list(self.connection_list)
         random.shuffle(self.randomized_connections)
 
@@ -126,6 +136,7 @@ class GearmanWorker(GearmanConnectionManager):
         """Polling callback to notify any outside listeners whats going on with the GearmanWorker.
 
         Return True to continue polling, False to exit the work loop"""
+        print("XXX WORKER 9")
         return True
 
     def after_job(self):
@@ -135,10 +146,12 @@ class GearmanWorker(GearmanConnectionManager):
 
         Return True to continue polling, False to exit the work loop
         """
+        print("XXX WORKER 10")
         return True
 
     def handle_error(self, current_connection):
         """If we discover that a connection has a problem, we better release the job lock"""
+        print("XXX WORKER 11")
         current_handler = self.connection_to_handler_map.get(current_connection)
         if current_handler:
             self.set_job_lock(current_handler, lock=False)
@@ -149,9 +162,11 @@ class GearmanWorker(GearmanConnectionManager):
     ## Public methods so Gearman jobs can send Gearman updates ##
     #############################################################
     def _get_handler_for_job(self, current_job):
+        print("XXX WORKER 12")
         return self.connection_to_handler_map[current_job.connection]
 
     def wait_until_updates_sent(self, multiple_gearman_jobs, poll_timeout=None):
+        print("XXX WORKER 13")
         connection_set = set([current_job.connection for current_job in multiple_gearman_jobs])
 
         def continue_while_updates_pending(any_activity):
@@ -161,12 +176,14 @@ class GearmanWorker(GearmanConnectionManager):
 
     def send_job_status(self, current_job, numerator, denominator, poll_timeout=None):
         """Send a Gearman JOB_STATUS update for an inflight job"""
+        print("XXX WORKER 14")
         current_handler = self._get_handler_for_job(current_job)
         current_handler.send_job_status(current_job, numerator=numerator, denominator=denominator)
 
         self.wait_until_updates_sent([current_job], poll_timeout=poll_timeout)
 
     def send_job_complete(self, current_job, data, poll_timeout=None):
+        print("XXX WORKER 15")
         current_handler = self._get_handler_for_job(current_job)
         current_handler.send_job_complete(current_job, data=data)
 
@@ -174,6 +191,7 @@ class GearmanWorker(GearmanConnectionManager):
 
     def send_job_failure(self, current_job, poll_timeout=None):
         """Removes a job from the queue if its backgrounded"""
+        print("XXX WORKER 16")
         current_handler = self._get_handler_for_job(current_job)
         current_handler.send_job_failure(current_job)
 
@@ -184,6 +202,7 @@ class GearmanWorker(GearmanConnectionManager):
         # Using GEARMAND_COMMAND_WORK_EXCEPTION is not recommended at time of this writing [2010-02-24]
         # http://groups.google.com/group/gearman/browse_thread/thread/5c91acc31bd10688/529e586405ed37fe
         #
+        print("XXX WORKER 17")
         current_handler = self._get_handler_for_job(current_job)
         current_handler.send_job_exception(current_job, data=data)
         current_handler.send_job_failure(current_job)
@@ -192,6 +211,7 @@ class GearmanWorker(GearmanConnectionManager):
 
     def send_job_data(self, current_job, data, poll_timeout=None):
         """Send a Gearman JOB_DATA update for an inflight job"""
+        print("XXX WORKER 18")
         current_handler = self._get_handler_for_job(current_job)
         current_handler.send_job_data(current_job, data=data)
 
@@ -199,6 +219,7 @@ class GearmanWorker(GearmanConnectionManager):
 
     def send_job_warning(self, current_job, data, poll_timeout=None):
         """Send a Gearman JOB_WARNING update for an inflight job"""
+        print("XXX WORKER 19")
         current_handler = self._get_handler_for_job(current_job)
         current_handler.send_job_warning(current_job, data=data)
 
@@ -209,10 +230,12 @@ class GearmanWorker(GearmanConnectionManager):
     #####################################################
     def create_job(self, command_handler, job_handle, task, unique, data):
         """Create a new job using our self.job_class"""
+        print("XXX WORKER 20")
         current_connection = self.handler_to_connection_map[command_handler]
         return self.job_class(current_connection, job_handle, task, unique, data)
 
     def on_job_execute(self, current_job):
+        print("XXX WORKER 21")
         try:
             function_callback = self.worker_abilities[current_job.task]
             job_result = function_callback(self, current_job)
@@ -222,15 +245,18 @@ class GearmanWorker(GearmanConnectionManager):
         return self.on_job_complete(current_job, job_result)
 
     def on_job_exception(self, current_job, exc_info):
+        print("XXX WORKER 22")
         self.send_job_failure(current_job)
         return False
 
     def on_job_complete(self, current_job, job_result):
+        print("XXX WORKER 23")
         self.send_job_complete(current_job, job_result)
         return True
 
     def set_job_lock(self, command_handler, lock):
         """Set a worker level job lock so we don't try to hold onto 2 jobs at anytime"""
+        print("XXX WORKER 24")
         if command_handler not in self.handler_to_connection_map:
             return False
 
@@ -250,8 +276,10 @@ class GearmanWorker(GearmanConnectionManager):
         return True
 
     def has_job_lock(self):
+        print("XXX WORKER 25")
         return bool(self.command_handler_holding_job_lock is not None)
 
     def check_job_lock(self, command_handler):
         """Check to see if we hold the job lock"""
+        print("XXX WORKER 26")
         return bool(self.command_handler_holding_job_lock == command_handler)

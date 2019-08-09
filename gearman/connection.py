@@ -69,7 +69,7 @@ class GearmanConnection(object):
         self._is_server_side = None
 
         # Reset all our raw data buffers
-        self._incoming_buffer = array.array("b")
+        self._incoming_buffer = array.array("c")
         self._outgoing_buffer = ''
 
         # Toss all commands we may have sent or received
@@ -153,6 +153,7 @@ class GearmanConnection(object):
     def read_commands_from_buffer(self):
         """Reads data from buffer --> command_queue"""
         received_commands = 0
+        print("XXXX read commands from buffer: gon' unpack command")
         while True:
             cmd_type, cmd_args, cmd_len = self._unpack_command(self._incoming_buffer)
             if not cmd_len:
@@ -204,16 +205,26 @@ class GearmanConnection(object):
         """Conditionally unpack a binary command or a text based server command"""
         assert self._is_client_side is not None, "Ambiguous connection state"
 
+        print("XXX unpack_command 1")
+
+        print("XXX unpack_command 1: '{}'".format(given_buffer[:4]))
+
         if not given_buffer:
             cmd_type = None
             cmd_args = None
             cmd_len = 0
+
+        # this is the first problem.... given_buffer[0] can be zero... or is that still wrong?
         elif given_buffer[0] == NULL_CHAR:
+            print("XXX unpack_command 1: enter here if binary!")
             # We'll be expecting a response if we know we're a client side command
             is_response = bool(self._is_client_side)
             cmd_type, cmd_args, cmd_len = parse_binary_command(given_buffer, is_response=is_response)
+            print("VVVVVV", cmd_type, cmd_args, cmd_len)
         else:
+            print("XXX unpack_command 1: enter here if text!")
             cmd_type, cmd_args, cmd_len = parse_text_command(given_buffer)
+            print("VVVVVV", cmd_type, cmd_args, cmd_len)
 
         if _DEBUG_MODE_ and cmd_type is not None:
             gearman_logger.debug('%s - Recv - %s - %r', hex(id(self)), get_command_name(cmd_type), cmd_args)

@@ -19,6 +19,8 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
     def __init__(self, connection_manager=None):
         super(GearmanClientCommandHandler, self).__init__(connection_manager=connection_manager)
 
+        print("XXX INIT GEARMAN CLIENT AGAIN")
+
         # When we first submit jobs, we don't have a handle assigned yet... these handles will be returned in the order of submission
         self.requests_awaiting_handles = collections.deque()
         self.handle_to_request_map = weakref.WeakValueDictionary()
@@ -41,14 +43,17 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
         # Once this command is sent, our request needs to wait for a handle
         current_request.state = JOB_PENDING
 
+        print("XXX CLIENT 1: Assert state", current_request)
         self.requests_awaiting_handles.append(current_request)
 
     def send_get_status_of_job(self, current_request):
         """Forward the status of a job"""
+        print("XXX CLIENT 2: send status of job")
         self._register_request(current_request)
         self.send_command(GEARMAN_COMMAND_GET_STATUS, job_handle=current_request.job.handle)
 
     def on_io_error(self):
+        print("XXX CLIENT 3: on error")
         for pending_request in self.requests_awaiting_handles:
             pending_request.state = JOB_UNKNOWN
 
@@ -56,16 +61,25 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
             inflight_request.state = JOB_UNKNOWN
 
     def _register_request(self, current_request):
+        print("XXX CLIENT 4 REGISTER REQUEST 3", current_request.job.handle)
         self.handle_to_request_map[current_request.job.handle] = current_request
+
+
 
     ##################################################################
     ## Gearman command callbacks with kwargs defined by protocol.py ##
     ##################################################################
     def _assert_request_state(self, current_request, expected_state):
+        print("XXX CLIENT 5: _assert request_states")
         if current_request.state != expected_state:
             raise InvalidClientState('Expected handle (%s) to be in state %r, got %r' % (current_request.job.handle, expected_state, current_request.state))
 
     def recv_job_created(self, job_handle):
+
+        # So we don't get here for some reason....
+
+        print("XXX RECV JOB CREATE", job_handle)
+
         if not self.requests_awaiting_handles:
             raise InvalidClientState('Received a job_handle with no pending requests')
 
@@ -82,6 +96,7 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
 
     def recv_work_data(self, job_handle, data):
         # Queue a WORK_DATA update
+        print("XXX CLIENT 6: recv work data")
         current_request = self.handle_to_request_map[job_handle]
         self._assert_request_state(current_request, JOB_CREATED)
 
@@ -91,6 +106,7 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
 
     def recv_work_warning(self, job_handle, data):
         # Queue a WORK_WARNING update
+        print("XXX CLIENT 7: recv work warning")
         current_request = self.handle_to_request_map[job_handle]
         self._assert_request_state(current_request, JOB_CREATED)
 
@@ -100,6 +116,7 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
 
     def recv_work_status(self, job_handle, numerator, denominator):
         # Queue a WORK_STATUS update
+        print("XXX CLIENT 7: recv work status")
         current_request = self.handle_to_request_map[job_handle]
         self._assert_request_state(current_request, JOB_CREATED)
 
@@ -117,6 +134,7 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
 
     def recv_work_complete(self, job_handle, data):
         # Update the state of our request and store our returned result
+        print("XXX CLIENT 8")
         current_request = self.handle_to_request_map[job_handle]
         self._assert_request_state(current_request, JOB_CREATED)
 
@@ -127,6 +145,7 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
 
     def recv_work_fail(self, job_handle):
         # Update the state of our request and mark this job as failed
+        print("XXX CLIENT 9")
         current_request = self.handle_to_request_map[job_handle]
         self._assert_request_state(current_request, JOB_CREATED)
 
@@ -138,6 +157,7 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
         # Using GEARMAND_COMMAND_WORK_EXCEPTION is not recommended at time of this writing [2010-02-24]
         # http://groups.google.com/group/gearman/browse_thread/thread/5c91acc31bd10688/529e586405ed37fe
         #
+        print("XXX CLIENT 10")
         current_request = self.handle_to_request_map[job_handle]
         self._assert_request_state(current_request, JOB_CREATED)
 
@@ -147,6 +167,7 @@ class GearmanClientCommandHandler(GearmanCommandHandler):
 
     def recv_status_res(self, job_handle, known, running, numerator, denominator):
         # If we received a STATUS_RES update about this request, update our known status
+        print("XXX CLIENT 11")
         current_request = self.handle_to_request_map[job_handle]
 
         job_known = bool(known == '1')
